@@ -4,10 +4,12 @@
 
 Реализация тестового стенда
 
-1. MODBUS RTU ── ядро данных ── MODBUS RTU
-2.                    ├──────── WEB SOCKET ── HTML
-3. MODBUS TCP ────────┼──────── MODBUS TCP
-4.     OPC UA ────────┴──────── OPC UA
+...
+MODBUS RTU ── ядро данных ── MODBUS RTU
+                   ├──────── WEB SOCKET ── HTML
+MODBUS TCP ────────┼──────── MODBUS TCP
+    OPC UA ────────┴──────── OPC UA
+...
 
 ### Структура проекта
 
