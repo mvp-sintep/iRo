@@ -1,0 +1,152 @@
+*:not(:defined) {
+  display: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 99%;
+}
+
+body {
+  cursor: default;
+  padding: 0px;
+  margin: 0px;
+  color: white;
+  background-color: #3e4345;
+}
+
+body,
+tbody,
+button {
+  font-family: 'Yu Gothic UI';
+  font-size: 11px;
+}
+
+table {
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+td {
+  padding: 0px;
+  margin: 0px;
+}
+
+#header {
+  margin: 20px auto;
+  width: 1024px;
+  overflow: hidden;
+}
+
+#header table {
+  width: 99%;
+  margin-left: 6px;
+  margin-right: 6px;
+}
+
+#header td:nth-of-type(1) {
+  width: 140px;
+}
+
+#header td:nth-of-type(3) {
+  width: 228px;
+  vertical-align: top;
+}
+
+#header .title,
+#header .sub-title,
+#header #date,
+#header #time,
+#header #host {
+  color: #ccc;
+  text-align: center;
+}
+
+#header .title,
+#header .sub-title {
+  font-family: 'Yu Gothic UI';
+}
+
+#header .title {
+  font-size: 36px;
+}
+
+#header .sub-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: -4px;
+}
+
+#header #date,
+#header #time,
+#header #host {
+  text-align: center;
+  font-family: 'Yu Gothic UI';
+}
+
+#header #date {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 0px;
+}
+
+#header #time {
+  font-family: 'Consolas';
+  font-size: 24px;
+  margin-top: -2px;
+}
+
+#header #host {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+#page {
+  margin: 20px auto;
+  width: 1024px;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  position: absolute;
+  z-index: 2;
+  width: 140px;
+  color: black;
+  background-color: #44ccff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 15px 7px 15px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.footer {
+  margin: 5px auto;
+  padding-bottom: 10px;
+  width: 1024px;
+}
+
+.footer table {
+  width: 99%;
+}
+
+.footer table td {
+  width: 50%;
+}
+
+.footer table td:nth-of-type(1) {
+  text-align: left;
+}
+
+.footer table td:nth-of-type(2) {
+  text-align: right;
+}
+
+.footer a {
+  color: #08f;
+}

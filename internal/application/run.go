@@ -1,8 +1,10 @@
 package application
 
 import (
+	"context"
 	"fmt"
 	"iRo/internal/config"
+	"iRo/internal/daemon"
 
 	"gopkg.in/yaml.v3"
 )
@@ -22,6 +24,16 @@ func Run(cfgShow bool, sysCfgPath *string) error {
 			return err
 		}
 		fmt.Printf("настройка:\n%s", string(out))
+	}
+	// создаем фоновый процесс
+	daemon, err := daemon.New(context.Background(), sysCfg)
+	// проверяем
+	if err != nil {
+		return err
+	}
+	// запускаем и возвращаем ошибку
+	if err := daemon.Run(); err != nil {
+		return err
 	}
 	// нет ошибок
 	return nil

@@ -30,7 +30,13 @@ check:
 install:
 	@echo -e "\033[92m# ${VERSION}V${COMMIT} install"
 	@scp iRo $(SERVER)
-	@scp -r config web script $(SERVER)
+	@scp -r config $(SERVER)
+	@echo -e "#\033[39m"
+
+.PHONY: web
+web:
+	@echo -e "\033[92m# ${VERSION}V${COMMIT} install"
+	@scp -r web $(SERVER)
 	@echo -e "#\033[39m"
 
 .PHONY: mod
