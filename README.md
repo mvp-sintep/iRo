@@ -2,7 +2,12 @@
 
 ### Задача
 
-1. Реализация тестового стенда MODBUS RTU -> MODBUS TCP
+Реализация тестового стенда
+
+1. MODBUS RTU ── ядро данных ── MODBUS RTU
+2.                    ├──────── WEB SOCKET ── HTML
+3. MODBUS TCP ────────┼──────── MODBUS TCP
+4.     OPC UA ────────┴──────── OPC UA
 
 ### Структура проекта
 
