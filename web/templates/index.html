@@ -12,71 +12,80 @@
     /*<![CDATA[*/
 
     /*** INTERFACE */
-
     const MainHeaderInterface = {
       draw: function () {
         try {
-          if( this.actual != undefined && this.actual == The.Data[ this.index ] ) return;
-          let data = this.actual = The.Data[ this.index ], tmp = new Date(), x, str = "";
-          x = data & 0x0000001f; tmp.setDate(x); data -= x; data /= 32;
-          x = data & 0x0000000f; tmp.setMonth(Number(x) - 1); data -= x; data /= 16;
-          x = data & 0x0000003f; tmp.setFullYear(x + 2000); data -= x; data /= 64;
-          this.date.innerText = tmp.toLocaleDateString( "ru-RU", { year: "numeric", month: "long", day: "numeric" } );
-          x = data & 0x0000001f; if (x < 10) str += "0"; str += x + ":"; data -= x; data /= 32;
-          x = data & 0x0000003f; if (x < 10) str += "0"; str += x + ":"; data -= x; data /= 64;
-          x = data & 0x0000003f; if (x < 10) str += "0"; str += x;
-          this.clock.innerText = str;
+          this.host.className = The.On ? "online" : "offline";
         }
         catch (e) { }
       }
     };
 
-    /*** TEMPLATE */
-    customElements.define("main-header", class extends HTMLElement {
-      constructor() {
-        super();
-        this.attachShadow({ mode: "open" });
-        this.template = document.querySelector("#main-header-template");
+    const RegisterInterface = {
+      draw: function () {
+        let str, fmt = 0; try { fmt = parseInt( this.selector.value ); } catch(e){}
+        try {
+          if( this.index >= 0 && The.Data != null && The.Data[ this.index ] != null ) {
+
+            switch( fmt ) {
+              case 1:
+                str = The.Data[ this.index ].toString( 16 );
+                this.innerText = "16#" + ( ( str.length < 4 ) ? ( "0" ).repeat( 4 - str.length ) + str : str );
+                break;
+              case 2:
+                str = The.Data[ this.index ].toString( 2 );
+                this.innerText = "2#" + ( ( str.length < 16 ) ? ( "0" ).repeat( 16 - str.length ) + str : str );
+                break;
+              default:
+                this.innerText = The.Data[ this.index ];
+                break;
+            }
+
+            this.style.color = "white";
+            return;
+          }
+          this.innerText = "~ - ~";
+          this.style.color = "red";
+        }
+        catch (e) {
+          console.log(e);
+        }
       }
-      connectedCallback() {
-        this.render();
-      }
-      render() {
-        if (!this.ownerDocument.defaultView) return;
-        this.shadowRoot.appendChild(this.template.content.cloneNode(true));
-        this.clock = this.shadowRoot.children[1].children[0].children[0].children[1].children[0].children[0];
-        this.date = this.shadowRoot.children[1].children[0].children[0].children[0].children[2].children[0];
-      }
-      static get observedAttributes() {
-        return ["template", "clock", "date"];
-      }
-    });
+    };
 
     /*** RUNTIME */
-    var The = { Data: null, Element: new Array() };
+    var The = { Data: null, Element: new Array(), On: false  };
     const config = { url: "//{{.ADDRESS}}", port: "{{.PORT}}" };
     window.document[ "create" ] = function( arg ) { return Object.extend( document.createElement( arg ), HTMLElementInterface ); };
-    const run = () => {
-      'use strict';
-      console.log("application config url=\"" + config.url + "\" port=\"" + config.port + "\"");
-      window["socket"] = new WebSocket( "ws:" + config.url + ":" + config.port + "/websocket.json" );
-      Object.extend( socket, {
-        onopen: () => { console.log( (new Date()).toISOString() + ": open websocket connection \"ws:" + config.url + ":" + config.port + "/websocket.json\""); },
-        onclose: () => { console.log( (new Date()).toISOString() + ": close websocket connection"); },
-        onerror: ( e ) => { console.log( (new Date()).toISOString() + ": " + e ); },
-        onmessage: ( arg ) => { new Response(arg.data).arrayBuffer().then((arg) => { The.Data = new Int16Array(arg); }) }
-      });
-    };
+    window.document[ "childx" ] = function( arg, ...index ) { try{index.forEach((item)=>{arg=arg.children[item];});}catch(e){return null;} return arg; };
     const initialize = () => {
       'use strict';
-      setInterval(() => { The.Element.forEach( ( value ) => { try { value.draw(); } catch (e) { } }) }, 500 );
-      // main-header
-      [
-        { index: 0, element: 0 }
-      ]
-        .forEach((item)=>{
-          The.Element.push( Object.extend( document.querySelectorAll( "main-header" )[ item.element ], { index: item.index }, MainHeaderInterface ) )
-        });
+      let tmp = document.querySelector(".page-header");
+      The.Element.push(Object.extend(tmp,MainHeaderInterface,{host:document.childx(tmp,0,0,2,0,0)}));
+      tmp = document.childx( document.querySelector(".page"), 1, 0 );
+      for( let i = 0, tr, str, td; i < 512; i++ ) {
+        tr = document.create( "tr" ).appendTo( tmp );
+        str = i.toString( 10 );
+        document.create( "td" ).appendTo( tr ).innerText = ( str.length < 4 ) ? ( "0" ).repeat( 4 - str.length ) + str : str;
+        The.Element.push( td = document.create( "td" ).appendTo( tr ).extend( RegisterInterface, { index: i } ) );
+        td.selector = document.create( "select" ).appendTo( document.create( "td" ).appendTo( tr ) );
+        document.create( "option" ).withAttribute( "value", 0 ).appendTo( td.selector ).innerText = "деcятичный";
+        document.create( "option" ).withAttribute( "value", 1 ).appendTo( td.selector ).innerText = "шестнадцатичный";
+        document.create( "option" ).withAttribute( "value", 2 ).appendTo( td.selector ).innerText = "двоичный";
+        document.create( "td" ).appendTo( tr );
+      }
+    };
+    const run = () => {
+     'use strict';
+      console.log("application config url=\"" + config.url + "\" port=\"" + config.port + "\"");
+      window["socket"]=new WebSocket("ws:"+config.url+":"+config.port+"/websocket.json");
+      Object.extend(socket,{
+        onopen:()=>{console.log((new Date()).toISOString()+": open websocket connection \"ws:"+config.url+":"+config.port+"/websocket.json\"");The.On=true;},
+        onclose:()=>{console.log((new Date()).toISOString()+": close websocket connection");The.On=false;},
+        onerror:(e)=>{ console.log((new Date()).toISOString()+": "+e);},
+        onmessage:(arg)=>{new Response(arg.data).arrayBuffer().then((arg)=>{The.Data=new Uint16Array(arg);});}
+      });
+      setInterval(()=>{The.Element.forEach((value)=>{try{value.draw();}catch(e){}})},500);
     };
     
     /*]]>*/
@@ -85,121 +94,43 @@
 </head>
 
 <body onload="initialize();run();">
-  <!-- ШАБЛОНЫ -->
-  <template id="main-header-template">
-    <style slot="main-header-slot">
-      #header {
-        margin: 20px auto;
-        width: 1024px;
-        overflow: hidden;
-      }
-      #header table {
-        width: 99%;
-        margin-left: 6px;
-        margin-right: 6px;
-      }
-      #header td:nth-of-type(1) {
-        width: 140px;
-      }
-      #header td:nth-of-type(3) {
-        width: 228px;
-        vertical-align: top;
-      }
-      #header .title,
-      #header .sub-title,
-      #header #date,
-      #header #time,
-      #header #host {
-        color: #ccc;
-        text-align: center;
-      }
-      #header .title,
-      #header .sub-title {
-        font-family: 'Yu Gothic UI';
-      }
-      #header .title {
-        font-size: 36px;
-      }
-      #header .sub-title {
-        font-size: 20px;
-        font-weight: 600;
-        margin-top: -4px;
-      }
-      #header #date,
-      #header #time,
-      #header #host {
-        text-align: center;
-        font-family: 'Yu Gothic UI';
-      }
-      #header #date {
-        font-size: 14px;
-        font-weight: 600;
-        margin-top: 0px;
-      }
-      #header #time {
-        font-family: 'Consolas';
-        font-size: 24px;
-        margin-top: -2px;
-      }
-      #header #host {
-        font-size: 9px;
-        font-weight: 600;
-        margin-top: 4px;
-      }
-    </style>
-    <div slot="main-header-slot" id="header">
-      <table class="block">
-        <tr>
-          <td rowspan="3"> <a href="http://www.sintep.ru"><img src="files/sintep.png" width="121px" height="47px" alt="www.sintep.ru" /></a> </td>
-          <td rowspan="3">
-            <div class="title">Шахта Кирова</div>
-            <div class="sub-title">Водоотлив ЦЕНТРАЛЬНЫЙ</div>
-          </td>
-          <td>
-            <div id="date">28 февраля 2023 г.</div>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <div id="time">00:00:00</div>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <div id="host">Источник: {{.ADDRESS}}:{{.PORT}}</div>
-          </td>
-          </tr>
-      </table>
-    </div>
-  </template>
-
-  <!-- HTML -->
-  <div class="main">
-    <main-header></main-header>
-    <!-- Фон -->
-    <div class="main-picture" style="left:475px;top:140px;"></div>
-    <!-- Параметры -->
-
-  <!--
-  <div id="page" class="main">
-    <div style="width: 100%; height: 50px;">
-      <div id="value" style="border: 1px solid #333; margin: auto; position: relative; top: 5px; width: 100px; height: 40px; font-size: 24px; text-align: center; font-family: 'Yu Gothic UI';"></div>
-    </div>
+  <div class="page-header">
+    <table>
+      <tr>
+        <td rowspan="3"><a href="http://www.sintep.ru"><img src="files/sintep.png" width="121px" height="47px" alt="www.sintep.ru" /></a></td>
+        <td rowspan="3"><div>шахта им. С.М.Кирова</div><div>Водоотлив ЦЕНТРАЛЬНЫЙ</div></td>
+        <td><div>28 февраля 2023 г.</div></td>
+      </tr>
+      <tr>
+        <td><div>00:00:00</div></td>
+      </tr>
+      <tr>
+        <td><div class="offline">{{.ADDRESS}}:{{.PORT}}</div></td>
+      </tr>
+    </table>
   </div>
-  -->
-  
-    <div class="footer">
-      <table>
-        <tr>
-          <td> <a href="http://www.sintep.ru">АО "СИНТЭП"</a> </td>
-          <td> <a href="http://{{.ADDRESS}}:{{.PORT}}/index.html">Оперативные данные ядра информационного обмена</a> </td>
-        </tr>
-      </table>
-    </div>
-    
+  <div class="page">
+    <div class="caption">Оперативные данные</div>
+    <table width="100%">
+      <tr>
+        <th>Регистр</th>
+        <th>Значение</th>
+        <th>Формат</th>
+        <th>Описание</th>
+      </tr>
+    </table>
   </div>
-  
-  </body>
+
+  <div class="page-footer">
+    <table>
+      <tr>
+        <td><a href="http://www.sintep.ru">АО "СИНТЭП"</a></td>
+        <td><a href="http://{{.ADDRESS}}:{{.PORT}}/index.html">Оперативные данные</a></td>
+      </tr>
+    </table>
+  </div>
+
+</body>
   
 </html>
   
