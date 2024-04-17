@@ -64,7 +64,7 @@ func (o *Driver) Run() error {
 			// уходим
 			return nil
 		// периодический контроль
-		case <-time.After(time.Duration(15) * time.Millisecond):
+		case <-time.After(time.Duration(o.cfg.Control) * time.Millisecond):
 			// проверяем на соединение
 			conn, err := listener.Accept()
 			// проверяем на наличие ошибок
@@ -75,7 +75,7 @@ func (o *Driver) Run() error {
 				continue
 			}
 			// создаем обработчика
-			connection, err := NewConnection(o.context, conn)
+			connection, err := NewConnection(o.context, o.cfg, conn)
 			// проверяем на наличие ошибок
 			if err != nil {
 				// сигнал ошибки

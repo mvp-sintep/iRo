@@ -48,7 +48,12 @@ MODBUS RTU + ядро данных + WEB SOCKET + HTML + MODBUS TCP  + OPC UA
 │          ├── mbtcp
 │          |     ├── serve.go
 │          |     └── server.go
-│          └── mbrtu
+│          ├── ua
+│          |     ├── export.c
+│          |     ├── export.h
+│          |     ├── open62541.*
+│          |     └── server.go
+│          └── web
 │                ├── serve.go
 │                ├── server.go
 │                └── socket.go

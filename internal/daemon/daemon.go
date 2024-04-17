@@ -8,6 +8,7 @@ import (
 	"iRo/internal/driver/tcp"
 	"iRo/internal/server/mbrtu"
 	"iRo/internal/server/mbtcp"
+	"iRo/internal/server/ua"
 	"iRo/internal/server/web"
 	"log"
 	"os"
@@ -27,6 +28,7 @@ type Daemon struct {
 	mbtcpSrv *mbtcp.Server
 	webECh   chan error
 	webSrv   *web.Server
+	uaSrv    *ua.Server
 }
 
 // New - создание процесса
@@ -66,6 +68,10 @@ func New(ctx context.Context, sysCfg *config.SystemConfiguration) (*Daemon, erro
 	if daemon.webSrv, err = web.New(daemon.context, daemon.webECh, &daemon.core, &sysCfg.HTTP); err != nil {
 		return nil, err
 	}
+	// создаем UA сервер
+	if daemon.uaSrv, err = ua.New(daemon.context, &sysCfg.UA); err != nil {
+		return nil, err
+	}
 	// вернем указатель на процесс
 	return daemon, nil
 }
@@ -82,6 +88,8 @@ func (o *Daemon) Run() error {
 	go func() { o.mbtcpSrv.Run() }()
 	// запускаем HTTP сервер
 	go func() { o.webECh <- o.webSrv.Run() }()
+	// запускаем UA сервер
+	go func() { o.uaSrv.Run() }()
 	// запускаем драйвер COM порта
 	go func() { o.comDrv.Run() }()
 	// запускаем драйвер TCP порта
@@ -120,6 +128,11 @@ func (o *Daemon) Run() error {
 
 // Shutdown - завершение процесса
 func (o *Daemon) Shutdown() {
+	// завершение работы UA сервера
+	if err := o.uaSrv.Shutdown(); err != nil {
+		// показываем сообщение
+		log.Print("ошибка OPC UA сервера <", err, ">")
+	}
 	// завершение работы HTTP сервера
 	if err := o.webSrv.Shutdown(); err != nil {
 		// показываем сообщение

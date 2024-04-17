@@ -34,6 +34,9 @@ type ModbusRTUConfig struct {
 type ModbusTCPConfig struct {
 	Address string     `yaml:"address"`
 	Port    int        `yaml:"port"`
+	Read    int        `yaml:"read"`
+	Write   int        `yaml:"write"`
+	Control int        `yaml:"control"`
 	Core    DataConfig `yaml:"core"`
 }
 
@@ -41,6 +44,12 @@ type ModbusTCPConfig struct {
 type ModbusConfig struct {
 	RTU []ModbusRTUConfig `yaml:"rtu"`
 	TCP ModbusTCPConfig   `yaml:"tcp"`
+}
+
+// UAConfig - настройки сервера opc ua
+type UAConfig struct {
+	Port      uint `yaml:"port"`
+	Namespace int  `yaml:"namespace"`
 }
 
 // HTTPConfig - настройки сервера http
@@ -57,6 +66,7 @@ type HTTPConfig struct {
 type SystemConfiguration struct {
 	COM    []COMPortConfig `yaml:"com"`
 	Modbus ModbusConfig    `yaml:"modbus"`
+	UA     UAConfig        `yaml:"ua"`
 	HTTP   HTTPConfig      `yaml:"http"`
 }
 
@@ -103,11 +113,18 @@ func New() *SystemConfiguration {
 			TCP: ModbusTCPConfig{
 				Address: address,
 				Port:    502,
+				Read:    60,
+				Write:   15,
+				Control: 15,
 				Core: DataConfig{
 					Start: 0,
 					Bytes: 0,
 				},
 			},
+		},
+		UA: UAConfig{
+			Port:      54000,
+			Namespace: 1,
 		},
 		HTTP: HTTPConfig{
 			Address:  address,

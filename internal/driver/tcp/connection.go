@@ -2,25 +2,28 @@ package tcp
 
 import (
 	"context"
+	"iRo/internal/config"
 	"net"
 	"time"
 )
 
 // Connection - блок данных соединения
 type Connection struct {
-	context  context.Context    // контекст для соединения
-	cancel   context.CancelFunc // функция закрытия контекста соединения
-	conn     net.Conn           // соединение
-	rxBuffer [259]byte          // приемный буфер
-	rxCount  int                // кол-во байт в приемном буфере
-	txBuffer [259]byte          // буфер отправки
-	txCount  int                // кол-во байт в буфере отправки
+	context  context.Context         // контекст для соединения
+	cancel   context.CancelFunc      // функция закрытия контекста соединения
+	cfg      *config.ModbusTCPConfig // запись конфигурации
+	conn     net.Conn                // соединение
+	rxBuffer [259]byte               // приемный буфер
+	rxCount  int                     // кол-во байт в приемном буфере
+	txBuffer [259]byte               // буфер отправки
+	txCount  int                     // кол-во байт в буфере отправки
 }
 
 // NewConnection - создание блока данных соединения
-func NewConnection(ctx context.Context, conn net.Conn) (*Connection, error) {
+func NewConnection(ctx context.Context, cfg *config.ModbusTCPConfig, conn net.Conn) (*Connection, error) {
 	// создаем блок данных соединения
 	connection := &Connection{
+		cfg:      cfg,
 		conn:     conn,
 		rxBuffer: [259]byte{},
 		rxCount:  0,
@@ -53,7 +56,7 @@ func (o *Connection) Serve(dsr chan *Connection, rts chan *Connection) error {
 				// выводим сообщение
 				//log.Printf("[%d]<-[%x]", o.txCount, o.txBuffer[:o.txCount])
 				// настраиваем таймаут
-				if err := o.conn.SetWriteDeadline(time.Now().Add(time.Duration(5) * time.Second)); err != nil {
+				if err := o.conn.SetWriteDeadline(time.Now().Add(time.Duration(o.cfg.Write) * time.Second)); err != nil {
 					return
 				}
 				// проверяем данные
@@ -69,7 +72,7 @@ func (o *Connection) Serve(dsr chan *Connection, rts chan *Connection) error {
 		o.conn.Close()
 	}()
 	// таймаут контроля
-	timeout := time.Duration(15) * time.Millisecond
+	timeout := time.Duration(o.cfg.Control) * time.Millisecond
 	// бесконечный цикл
 	for {
 		// селектор сигналов
@@ -81,7 +84,7 @@ func (o *Connection) Serve(dsr chan *Connection, rts chan *Connection) error {
 		// нет событий
 		case <-time.After(timeout):
 			// устанавливаем время ожидания
-			if err := o.conn.SetReadDeadline(time.Now().Add(time.Duration(15) * time.Second)); err != nil {
+			if err := o.conn.SetReadDeadline(time.Now().Add(time.Duration(o.cfg.Read) * time.Second)); err != nil {
 				return err
 			}
 			// читаем входящий поток
