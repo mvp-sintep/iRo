@@ -1,7 +1,6 @@
 package mbrtu
 
 import (
-	"iRo/internal/core"
 	"iRo/internal/pkg/crc16"
 	"iRo/internal/pkg/get"
 	"iRo/internal/pkg/modbus"
@@ -81,7 +80,7 @@ func (o *Server) serve() {
 						// заполнитель значений за пределами ядра данных
 						tmp := uint16(0)
 						if i < length {
-							tmp = get.Uint16Swapped(core.Data[i:])
+							tmp = get.Uint16Swapped((*o.core)[i:])
 						}
 						// пишем в буфер
 						set.Uint16(buffer[tx:], tmp)
@@ -135,7 +134,7 @@ func (o *Server) serve() {
 							break
 						}
 						// пишем в ядро
-						set.Uint16(core.Data[i:], get.Uint16Swapped(request[tx:]))
+						set.Uint16((*o.core)[i:], get.Uint16Swapped(request[tx:]))
 						// один регистр это 2 байта
 						tx += 2
 						i += 2

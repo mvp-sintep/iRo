@@ -24,8 +24,12 @@ MODBUS RTU + ядро данных + WEB SOCKET + HTML + MODBUS TCP  + OPC UA
 │    ├── daemon
 │    |     └── daemon.go
 │    ├── driver
-|    |     └── com
+|    |     ├── com
+│    |     |     ├── api.go
+│    |     |     └── port.go
+|    |     └── tcp
 │    |           ├── api.go
+│    |           ├── connection.go
 │    |           └── port.go
 │    ├── pkg
 │    |     ├── crc16
@@ -38,9 +42,16 @@ MODBUS RTU + ядро данных + WEB SOCKET + HTML + MODBUS TCP  + OPC UA
 │    |     └── set
 │    |           └── set.go
 │    └── server
+│          ├── mbrtu
+│          |     ├── serve.go
+│          |     └── server.go
+│          ├── mbtcp
+│          |     ├── serve.go
+│          |     └── server.go
 │          └── mbrtu
 │                ├── serve.go
-│                └── server.go
+│                ├── server.go
+│                └── socket.go
 ├── vendor
 └── web
      ├── files
