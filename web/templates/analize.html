@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset='utf-8'>
+  <meta Cache-Control='max-age=300'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>СИНТЭП. САУК ВУ</title>
+  <link href='files/analize.css' rel='stylesheet' type='text/css' />
+  <script type="text/javascript" src="files/engine.js"></script>
+  <script type="text/javascript">
+    /*<![CDATA[*/
+
+    /*** TEMPLATE */
+
+    /*** RUNTIME */
+
+    window.document["create"] = function (arg) { return Object.extend(document.createElement(arg), HTMLElementInterface); };
+
+    const config = {
+      url: "//{{.ADDRESS}}",
+      port: "{{.PORT}}"
+    };
+
+    const drawBlock = (_data, _id, _count, _last, _format) => {
+      'use strict';
+
+      if (_data == undefined || _format == undefined) return;
+      var max = 0, sum = 0, height, element, tmp = document.getElementById(_id);
+      if (tmp == undefined) return;
+      _data.forEach(item => { let x = parseInt(item.count); if (max < x) max = x; sum += x; });
+      height = tmp.getBoundingClientRect().height;
+      for (let i = 0; i < _count; i++) {
+        element = document.create("div");
+        if (_data[i] != undefined) {
+          element.innerHTML = "<span class='tooltip-text'>" + _format(_data[i].datetime) + " : [ " + _data[i].count + " ]</span>";
+          if (max > 0) element.style.height = ((height * parseInt(_data[i].count)) / max).toString() + 'px';
+        }
+        element.appendTo(tmp);
+      }
+      tmp.parentElement.children[0].children[0].children[0].children[0].innerText = sum;
+      tmp = tmp.children[_last]; if (tmp != undefined) tmp.classList.add("last");
+    };
+
+    var Timeout = 0; 
+
+    const graph = (arg) => {
+      'use strict';
+
+      var request;
+
+      if( Timeout > 20000 ) { console.log( "SQL.JSON FAILED" ); return; }
+
+      switch( arg ) {
+
+        // Список активных 
+        case 0:
+          request = "select to_char( max, 'YYYY-MM-DD HH24:MI:SS' ) as datetime, msg.severity as severity, event.text as name, event.state as state " +
+            "from ( select msg, max( ts ) as max from event group by msg ) tmp " +
+            "inner join event on event.msg = tmp.msg and ts = max and ( state = 2 or state = 3 ) join msg on event.msg = msg.id";
+    
+          fetch("http://" + config.url + ":" + config.port + "/sql.json?request=" + encodeURIComponent(request), { signal:AbortSignal.timeout(15000) })
+            .then(response => response.json())
+            .then(result => {
+              if (result.ok != 'true') throw ("FATAL ERROR: SQL request failed");
+              var tmp = document.getElementById("journal");
+              if (tmp != undefined) {
+                var x, cn, tx;
+                tmp = tmp.children[0];
+                result.result.forEach(element => {
+                  x = parseInt(element['severity']); cn = ""; tx = "прочее";
+                  if (x > 500) { cn = "fault"; tx = "авария"; } else if (x > 300) { cn = "warning"; tx = "предупреждение"; } else if (x > 50) { cn = "info"; tx = "справка"; }
+                  document.create("tr").withClassName(cn).withInnerHTML("<td>" + element['datetime'] + "</td><td>" + tx + "</td><td>" + element['name'] + "</td><td>" + (parseInt(element['name']) == 3 ? "да" : "нет") + "</td>").appendTo(tmp);
+                })
+                document.create("tr").withInnerHTML("<td>&nbsp;</td><td></td><td></td><td></td>").appendTo(tmp);
+              }
+            })
+            .catch(err => { console.log(err); Timeout += 2000; setTimeout( graph, Timeout, arg); });
+          break;
+
+        // Аварии за сутки
+        case 1:
+          request = "select to_char( generator, 'YYYY-MM-DD HH24:MI:SS' ) as datetime, count( result.state ) as count " +
+            "from generate_series( date_trunc('hour', now() - interval '23 hour' ), date_trunc('hour', now()), '1 hour'::interval) as generator " +
+            "left join (" +
+            "  select ts, state from event " +
+            "  inner join msg on event.msg = msg.id and state = 2 and msg.severity >= 500 and msg.severity < 1000 " +
+            ") as result " +
+            "on ts >= generator and ts < generator + interval '1 hour' " +
+            "group by generator " +
+            "order by generator";
+    
+          fetch("http://" + config.url + ":" + config.port + "/sql.json?request=" + encodeURIComponent(request), { signal:AbortSignal.timeout(15000) })
+            .then(response => response.json())
+            .catch(err=>{console.log(err)})
+            .then(result=>{
+              if(result.ok!='true') throw("FATAL ERROR: SQL request failed");
+              drawBlock(result.result,"alert-day-graph",24,23,(arg)=>{return arg.substring(0,20);});
+            })
+            .catch(err => { console.log(err); Timeout += 2000; setTimeout( graph, Timeout, arg); } );
+          break;
+
+        // Аварии за декаду
+        case 2:
+          request = "select to_char( generator, 'YYYY-MM-DD HH24:MI:SS' ) as datetime, count( result.state ) as count " +
+            "from generate_series( date_trunc('day', now() - interval '9 day' ), date_trunc('day', now()), '1 day'::interval ) as generator " +
+            "left join (" +
+            "  select ts, state from event " +
+            "  inner join msg on event.msg = msg.id and state = 2 and msg.severity >= 500 and msg.severity < 1000 " +
+            ") as result " +
+            "on ts >= generator and ts < generator + interval '1 day' " +
+            "group by generator " +
+            "order by generator";
+    
+          fetch("http://" + config.url + ":" + config.port + "/sql.json?request=" + encodeURIComponent(request), { signal:AbortSignal.timeout(15000) })
+            .then(response => response.json())
+            .then(result => {
+              if (result.ok != 'true') throw ("FATAL ERROR: SQL request failed");
+              drawBlock(result.result, "alert-decade-graph", 10, 9, (arg) => { return arg.substring(0, 10); });
+            })
+            .catch(err => { console.log(err); Timeout += 2000; setTimeout( graph, Timeout, arg); });
+          break;
+
+        // Аварии по суткам за текущий месяц
+        case 3:
+          request = "select to_char( generator, 'YYYY-MM-DD HH24:MI:SS' ) as datetime, count( result.state ) as count " +
+            "from generate_series( date_trunc('month', now() ), date_trunc('day', now()), '1 day'::interval ) as generator " +
+            "left join (" +
+            "  select ts, state from event " +
+            "  inner join msg on event.msg = msg.id and state = 2 and msg.severity >= 500 and msg.severity < 1000 " +
+            ") as result " +
+            "on ts >= generator and ts < generator + interval '1 day' " +
+            "group by generator " +
+            "order by generator";
+    
+          fetch("http://" + config.url + ":" + config.port + "/sql.json?request=" + encodeURIComponent(request), { signal:AbortSignal.timeout(15000) })
+            .then(response => response.json())
+            .then(result => {
+              if (result.ok != 'true') throw ("FATAL ERROR: SQL request failed");
+              drawBlock(result.result, "alert-month-graph", 31, new Date().getDate() - 1, (arg) => { return arg.substring(0, 10); });
+            })
+            .catch(err => { console.log(err); Timeout += 2000; setTimeout( graph, Timeout, arg); });
+          break;
+
+        // Аварии по месяцам за текущий год
+        case 4:
+          request = "select to_char( generator, 'YYYY-MM-DD HH24:MI:SS' ) as datetime, count( result.state ) as count " +
+            "from generate_series( date_trunc( 'year', now() ), date_trunc('month', now()), '1 month'::interval ) as generator " +
+            "left join (" +
+            "  select ts, state from event " +
+            "  inner join msg on event.msg = msg.id and state = 2 and msg.severity >= 500 and msg.severity < 1000 " +
+            ") as result " +
+            "on ts >= generator and ts < generator + interval '1 month' " +
+            "group by generator " +
+            "order by generator";
+    
+          fetch("http://" + config.url + ":" + config.port + "/sql.json?request=" + encodeURIComponent(request), { signal:AbortSignal.timeout(15000) })
+            .then(response => response.json())
+            .then(result => {
+              if (result.ok != 'true') throw ("FATAL ERROR: SQL request failed");
+              drawBlock(result.result, "alert-year-graph", 12, new Date().getMonth(), (arg) => { return arg.substring(0, 7); });
+            })
+            .catch(err => { console.log(err); Timeout += 2000; setTimeout( graph, Timeout, arg); });
+          break;
+
+        // Предупреждения за сутки
+        case 5:
+          request = "select to_char( generator, 'YYYY-MM-DD HH24:MI:SS' ) as datetime, count( result.state ) as count " +
+            "from generate_series( date_trunc('hour', now() - interval '23 hour' ), date_trunc('hour', now()), '1 hour'::interval) as generator " +
+            "left join (" +
+            "select ts, state from event " +
+            "inner join msg on event.msg = msg.id and state = 2 and msg.severity >= 300 and msg.severity < 500 " +
+            ") as result " +
+            "on ts >= generator and ts < generator + interval '1 hour' " +
+            "group by generator " +
+            "order by generator";
+    
+          fetch("http://" + config.url + ":" + config.port + "/sql.json?request=" + encodeURIComponent(request), { signal:AbortSignal.timeout(15000) })
+            .then(response => response.json())
+            .then(result => {
+              if (result.ok != 'true') throw ("FATAL ERROR: SQL request failed");
+              drawBlock(result.result, "warning-day-graph", 24, 23, (arg) => { return arg.substring(0, 10); });
+            })
+            .catch(err => { console.log(err); Timeout += 2000; setTimeout( graph, Timeout, arg); });
+          break;
+
+        // Предупреждения за декаду
+        case 6:
+          request = "select to_char( generator, 'YYYY-MM-DD HH24:MI:SS' ) as datetime, count( result.state ) as count " +
+            "from generate_series( date_trunc('day', now() - interval '9 day' ), date_trunc('day', now()), '1 day'::interval ) as generator " +
+            "left join (" +
+            "select ts, state from event " +
+            "inner join msg on event.msg = msg.id and state = 2 and msg.severity >= 300 and msg.severity < 500 " +
+            ") as result " +
+            "on ts >= generator and ts < generator + interval '1 day' " +
+            "group by generator " +
+            "order by generator";
+    
+          fetch("http://" + config.url + ":" + config.port + "/sql.json?request=" + encodeURIComponent(request), { signal:AbortSignal.timeout(15000) })
+            .then(response => response.json())
+            .then(result => {
+              if (result.ok != 'true') throw ("FATAL ERROR: SQL request failed");
+              drawBlock(result.result, "warning-decade-graph", 10, 9, (arg) => { return arg.substring(0, 10); });
+            })
+            .catch(err => { console.log(err); Timeout += 2000; setTimeout( graph, Timeout, arg); });
+          break;
+
+        // Предупреждения по суткам за текущий месяц
+        case 7:
+          request = "select to_char( generator, 'YYYY-MM-DD HH24:MI:SS' ) as datetime, count( result.state ) as count " +
+            "from generate_series( date_trunc( 'month', now() ), date_trunc('day', now()), '1 day'::interval ) as generator " +
+            "left join (" +
+            "select ts, state from event " +
+            "inner join msg on event.msg = msg.id and state = 2 and msg.severity >= 300 and msg.severity < 500 " +
+            ") as result " +
+            "on ts >= generator and ts < generator + interval '1 day' " +
+            "group by generator " +
+            "order by generator";
+    
+          fetch("http://" + config.url + ":" + config.port + "/sql.json?request=" + encodeURIComponent(request), { signal:AbortSignal.timeout(15000) })
+            .then(response => response.json())
+            .then(result => {
+              if (result.ok != 'true') throw ("FATAL ERROR: SQL request failed");
+              drawBlock(result.result, "warning-month-graph", 31, new Date().getDate() - 1, (arg) => { return arg.substring(0, 10); });
+            })
+            .catch(err => { console.log(err); Timeout += 2000; setTimeout( graph, Timeout, arg); });
+          break;
+
+        // Предупреждения по месяцам за текущий год
+        case 8:
+          request = "select to_char( generator, 'YYYY-MM-DD HH24:MI:SS' ) as datetime, count( result.state ) as count " +
+            "from generate_series( date_trunc( 'year', now() ), date_trunc('month', now()), '1 month'::interval ) as generator " +
+            "left join (" +
+            "select ts, state from event " +
+            "inner join msg on event.msg = msg.id and state = 2 and msg.severity >= 300 and msg.severity < 500 " +
+            ") as result " +
+            "on ts >= generator and ts < generator + interval '1 month' " +
+            "group by generator " +
+            "order by generator";
+    
+          fetch("http://" + config.url + ":" + config.port + "/sql.json?request=" + encodeURIComponent(request), { signal:AbortSignal.timeout(15000) })
+            .then(response => response.json())
+            .then(result => {
+              if (result.ok != 'true') throw ("FATAL ERROR: SQL request failed");
+              drawBlock(result.result, "warning-year-graph", 12, new Date().getMonth(), (arg) => { return arg.substring(0, 7); });
+            })
+            .catch(err => { console.log(err); Timeout += 2000; setTimeout( graph, Timeout, arg); });
+          break;
+
+        // Суммы по типам аварий
+        case 9:
+          request = "select sum( case when severity < 300 then 1 else 0 end ) as info, " +
+            "sum( case when severity >= 300 and severity < 500 then 1 else 0 end ) as warning, " +
+            "sum( case when severity >= 500 and severity < 1000 then 1 else 0 end ) as fault " +
+            "from event left join msg on event.msg = msg.id and state = 2 and ts >= ( date_trunc('hour', now()) - interval '24 hours' )";
+    
+          fetch("http://" + config.url + ":" + config.port + "/sql.json?request=" + encodeURIComponent(request), { signal:AbortSignal.timeout(15000) })
+            .then(response => response.json())
+            .then(result => {
+              if (result.ok != 'true') throw ("FATAL ERROR: SQL request failed");
+              var tmp, sum = 0, data = result.result[0];
+              sum += parseInt(data.info);
+              sum += parseInt(data.warning);
+              sum += parseInt(data.fault);
+              tmp = document.getElementById("pies");
+              if (tmp != undefined) {
+                if (sum > 0) {
+                  tmp.children[1].children[1].innerText += " " + data.fault + "/" + sum;
+                  tmp.children[1].children[0].children[0].style.cssText = "--p:" + (100 * parseInt(data.fault) / sum) + "; --c:#d33; --b:10px;";
+                  tmp.children[1].children[0].children[0].innerText = parseInt(data.fault);
+                  tmp.children[2].children[1].innerText += " " + data.warning + "/" + sum;
+                  tmp.children[2].children[0].children[0].style.cssText = "--p:" + (100 * parseInt(data.warning) / sum) + "; --c:#fc0; --b:10px;";
+                  tmp.children[2].children[0].children[0].innerText = parseInt(data.warning);
+                  tmp.children[3].children[1].innerText += " " + data.info + "/" + sum;
+                  tmp.children[3].children[0].children[0].style.cssText = "--p:" + (100 * parseInt(data.info) / sum) + "; --c:#08f; --b:10px;";
+                  tmp.children[3].children[0].children[0].innerText = parseInt(data.info);
+                } else {
+                  [1, 2, 3].forEach(i => { tmp.children[i].children[1].innerText += " 0/0"; });
+                }
+              }
+            })
+            .catch(err => { console.log(err); Timeout += 2000; setTimeout( graph, Timeout, arg); });
+          break;
+      }
+
+    };
+
+    const run = () => {
+      'use strict';
+
+      var tmp, request;
+
+      tmp = document.getElementById("date");
+      if (tmp != undefined) tmp.innerText = new Date().toLocaleDateString("ru-RU", { year: 'numeric', month: 'long', day: 'numeric' });
+      tmp = document.getElementById("time");
+      if (tmp != undefined) tmp.innerText = new Date().toLocaleTimeString("ru-RU", { hour: 'numeric', minute: 'numeric', second: 'numeric' });
+
+      for(let i = 0; i < 10; i++ ) setTimeout( graph, i * 500, i );
+
+    };
+
+    const initialize = () => {
+      'use strict';
+      console.log("application config url=\"" + config.url + "\" port=\"" + config.port + "\"");
+    };
+
+    const handle = ( arg ) => {
+      if (arg.data) console.log("=> [" + arg.data + "]");
+    };
+
+    /*]]>*/
+  </script>
+
+</head>
+
+<body onload="initialize();run();">
+  <div class="page-header">
+    <table>
+      <tr>
+        <td rowspan="3"><a href="http://www.sintep.ru"><img src="files/sintep.png" width="121px" height="47px" alt="www.sintep.ru" /></a></td>
+        <td rowspan="3"><div>шахта им. С.М.Кирова</div><div>Водоотлив ЦЕНТРАЛЬНЫЙ</div></td>
+        <td><div id="date">28 февраля 2023 г.</div></td>
+      </tr>
+      <tr>
+        <td><div id="time">00:00:00</div></td>
+      </tr>
+      <tr>
+        <td><div>{{.ADDRESS}}:{{.PORT}}</div></td>
+      </tr>
+    </table>
+  </div>
+  <div id="page" class="main">
+    <div class="boards">
+      <table class="header alert">
+        <tbody>
+          <tr>
+            <td>
+              <div class="header">Календарная статистика аварийных сообщений</div>
+            </td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              <div class="board">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td></td>
+                      <td>по часам за последние 24 часа</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div id="alert-day-graph" class="graph hour">
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="board">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td></td>
+                      <td>по суткам за последние 10 суток</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div id="alert-decade-graph" class="graph dday">
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="board black">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td></td>
+                      <td>по суткам за текущий месяц</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div id="alert-month-graph" class="graph day">
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="board">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td></td>
+                      <td>по месяцам за текущий год</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div id="alert-year-graph" class="graph month">
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <table class="header warning">
+        <tbody>
+          <tr>
+            <td>
+              <div class="header">Календарная статистика предупреждений</div>
+            </td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              <div class="board">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td></td>
+                      <td>по часам за последние 24 часа</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div id="warning-day-graph" class="graph hour">
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="board">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td></td>
+                      <td>по суткам за последние 10 суток</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div id="warning-decade-graph" class="graph dday">
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="board black">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td></td>
+                      <td>по суткам за текущий месяц</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div id="warning-month-graph" class="graph day">
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="board">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td></td>
+                      <td>по месяцам за текущий год</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div id="warning-year-graph" class="graph month">
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="pies" class="pies">
+      <table class="header">
+        <tbody>
+          <tr>
+            <td>
+              <div class="header">Доли по типам сообщений за последние 24 часа</div>
+            </td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="box">
+        <div class="graph">
+          <div class="pie alarm">0</div>
+        </div>
+        <div class="legend">Аварийные сообщения </div>
+      </div>
+      <div class="box">
+        <div class="graph">
+          <div class="pie warning">0</div>
+        </div>
+        <div class="legend">Предупредительные сообщения </div>
+      </div>
+      <div class="box">
+        <div class="graph">
+          <div class="pie info">0</div>
+        </div>
+        <div class="legend">Информационные сообщения </div>
+      </div>
+    </div>
+    <div class="journal">
+      <table class="header">
+        <tr>
+          <td>
+            <div class="header">Список активных тревог</div>
+          </td>
+          <td></td>
+        </tr>
+      </table>
+      <div class="list">
+        <table id="journal">
+          <tr>
+            <th>Дата и время</th>
+            <th>Тип</th>
+            <th>Сообщение</th>
+            <th>Подтверждена</th>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <table>
+      <tr>
+        <td> <a href="http://www.sintep.ru">АО "СИНТЭП"</a> </td>
+        <td> <a href="http://{{.ADDRESS}}:{{.PORT}}/index.html">Оперативные данные</a> </td>
+      </tr>
+    </table>
+  </div>
+
+</body>
+
+</html>

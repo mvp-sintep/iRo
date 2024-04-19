@@ -31,6 +31,14 @@ func (o *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			o.hRoot(w)
 			return
 		}
+
+		if r.URL.String() == "/analize.html" {
+			http.Header.Add(w.Header(), "X-Content-Type-Options", "nosniff")
+			http.Header.Add(w.Header(), "Cache-Control", "no-cache")
+			o.hAnalize(w)
+			return
+		}
+
 		if r.URL.String() == "/favicon.ico" {
 			http.Header.Add(w.Header(), "X-Content-Type-Options", "nosniff")
 			http.Header.Add(w.Header(), "Cache-Control", "max-age=31536000,immutable")
@@ -81,6 +89,25 @@ func (o *Server) hError(w http.ResponseWriter, arg string) {
 // hRoot - отвечаем главной страницей
 func (o *Server) hRoot(w http.ResponseWriter) {
 	tmp, err := template.ParseFiles(o.cfg.Root + "/templates/index.html")
+	if err != nil {
+		o.hError(w, err.Error())
+	} else {
+		w.WriteHeader(http.StatusOK)
+		if err = tmp.Execute(w, struct {
+			ADDRESS string
+			PORT    string
+		}{
+			o.cfg.Address,
+			o.cfg.Port,
+		}); err != nil {
+			o.hError(w, err.Error())
+		}
+	}
+}
+
+// hRoot - отвечаем страницей анализа тревог
+func (o *Server) hAnalize(w http.ResponseWriter) {
+	tmp, err := template.ParseFiles(o.cfg.Root + "/templates/analize.html")
 	if err != nil {
 		o.hError(w, err.Error())
 	} else {

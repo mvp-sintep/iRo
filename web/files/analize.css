@@ -1,0 +1,476 @@
+*:not(:defined) {
+  display: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 99%;
+}
+
+body {
+  cursor: default;
+  padding: 0px;
+  margin: 0px;
+  color: white;
+  background-color: #3e4345;
+}
+
+body,
+tbody,
+button {
+  font-family: 'Yu Gothic UI';
+  font-size: 11px;
+}
+
+table {
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+td {
+  padding: 0px;
+  margin: 0px;
+}
+
+.page-header {
+  margin: 20px auto;
+  width: 1024px;
+  overflow: hidden;
+}
+
+.page-header table {
+  width: 99%;
+  margin-left: 6px;
+  margin-right: 6px;
+}
+
+.page-header td:nth-of-type(1) {
+  width: 140px;
+}
+
+.page-header td:nth-of-type(3) {
+  width: 228px;
+  vertical-align: top;
+}
+
+.page-header * {
+  color: #ccc;
+  text-align: center;
+}
+
+.page-header td:nth-of-type(2) div:nth-of-type(1) {
+  font-size: 36px;
+}
+
+.page-header td:nth-of-type(2) div:nth-of-type(2) {
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: -4px;
+}
+
+.page-header td:nth-of-type(3) * {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 0px;
+}
+
+.page-header tr:nth-of-type(2) td:nth-of-type(1) * {
+  font-family: 'Consolas';
+  font-size: 24px;
+  margin-top: -2px;
+}
+
+.page-header tr:nth-of-type(3) td:nth-of-type(1) * {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+#page {
+  margin: 20px auto;
+  width: 1024px;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  position: absolute;
+  z-index: 2;
+  width: 140px;
+  color: black;
+  background-color: #44ccff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 15px 7px 15px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.boards .board .graph div:hover .tooltip-text {
+  visibility: visible;
+}
+
+.boards table {
+  width: 99%;
+  margin-left: 6px;
+  margin-right: 6px;
+}
+
+.boards table.header td {
+  height: 42px;
+  vertical-align: top;
+}
+
+.boards table.header td:nth-of-type(1) {
+  width: 70%;
+}
+
+.boards table.header.warning {
+  margin-top: 12px;
+}
+
+.boards .header,
+.pies .header,
+.journal .header {
+  font-family: 'Yu Gothic UI';
+  font-weight: 350;
+  font-size: 24px;
+}
+
+.boards .board {
+  margin: 4px auto;
+  width: 232px;
+  height: 130px;
+  background-color: #313537;
+  border: 4px solid #313537;
+  border-radius: 15px;
+}
+
+.boards .board.black {
+  background-color: #141718;
+  border: 4px solid #141718;
+}
+
+.boards .board table {
+  margin: 0px auto;
+  table-layout: fixed;
+}
+
+.boards .board td {
+  font-family: 'Yu Gothic UI';
+  height: 42px;
+  overflow: hidden;
+}
+
+.boards .board td:nth-of-type(1) {
+  width: 38%;
+  font-size: 22px;
+  text-align: left;
+  padding-left: 12px;
+}
+
+.boards .board td:nth-last-of-type(1) {
+  color: #a0a0a0;
+  width: 64%;
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 95%;
+  text-align: right;
+  padding-right: 12px;
+}
+
+.boards .board .graph {
+  margin: 0px auto;
+  padding-top: 65px;
+  padding-left: 3px;
+  width: 220px;
+  height: 76px;
+  overflow: hidden;
+}
+
+.boards .board .graph div {
+  display: inline-block;
+}
+
+.boards .board .graph.hour div {
+  width: 7px;
+  height: 1px;
+  margin-right: 2px;
+  background-color: #ccc;
+  border-top: 2px solid #ccc;
+  border-radius: 4px;
+  margin-top: -74px;
+}
+
+.boards .board .graph.hour div {
+  background-color: #fff;
+  border-color: #fff;
+}
+
+.boards .board .graph.dday div {
+  width: 17px;
+  height: 1px;
+  margin-right: 4px;
+  background-color: #ccc;
+  border-top: 2px solid #ccc;
+  border-radius: 4px;
+  margin-top: -74px;
+}
+
+.boards .board .graph.dday div.last {
+  background-color: #fff;
+  border-color: #fff;
+}
+
+.boards .board .graph.day div {
+  width: 5px;
+  height: 1px;
+  margin-right: 2px;
+  background-color: #ccc;
+  border-top: 2px solid #ccc;
+  border-radius: 4px;
+  margin-top: -74px;
+}
+
+.boards .board .graph.day div.last {
+  background-color: #fff;
+  border-color: #fff;
+}
+
+.boards .board .graph.month div {
+  width: 14px;
+  height: 1px;
+  margin-right: 4px;
+  background-color: #ccc;
+  border-top: 2px solid #ccc;
+  border-radius: 4px;
+  margin-top: -74px;
+}
+
+.boards .board .graph.month div.last {
+  background-color: #fff;
+  border-color: #fff;
+}
+
+.pies {
+  margin-top: 22px;
+}
+
+.pies table {
+  width: 99%;
+  margin-left: 6px;
+  margin-right: 6px;
+}
+
+.pies table.header td {
+  height: 42px;
+  vertical-align: top;
+}
+
+.pies .header {
+  font-family: 'Yu Gothic UI';
+  font-weight: 350;
+  font-size: 24px;
+}
+
+.pies .header td:nth-of-type(1) {
+  width: 65%;
+}
+
+.pies .box {
+  display: inline-block;
+  width: 280px;
+  height: 180px;
+  overflow: hidden;
+  margin-left: 12px;
+  margin-right: 12px;
+}
+
+.pies .box:nth-of-type(1) {
+  margin-left: 44px;
+}
+
+.pies .graph {
+  padding-left: 80px;
+}
+
+.pies .box .legend {
+  font-family: 'Yu Gothic UI';
+  color: #ccc;
+  font-size: 13px;
+  font-weight: 450;
+  margin: 4px auto;
+  padding-left: 6px;
+  padding-right: 6px;
+  position: relative;
+  left: -70px;
+  top: -145px;
+  width: 150px;
+}
+
+/*@supports selector(@property --p) {*/
+
+  @property --p {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  .pie {
+    --p: 20;
+    --b: 10px;
+    --c: #000;
+    --w: 150px;
+    width: var(--w);
+    aspect-ratio: 1;
+    position: relative;
+    display: inline-grid;
+    margin: 5px;
+    place-content: center;
+    font-size: 25px;
+    font-family: 'Yu Gothic UI';
+  }
+
+  .pie:before,
+  .pie:after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+  }
+
+  .pie:before {
+    inset: 0;
+    background: radial-gradient(farthest-side, var(--c) 98%, #0000) top/var(--b) var(--b) no-repeat, conic-gradient(var(--c) calc(var(--p)*1%), #0000 0);
+    -webkit-mask: radial-gradient(farthest-side, #0000 calc(99% - var(--b)), #000 calc(100% - var(--b)));
+    mask: radial-gradient(farthest-side, #0000 calc(99% - var(--b)), #000 calc(100% - var(--b)));
+    background-color: #313537;
+  }
+
+  .pie:after {
+    inset: calc(50% - var(--b)/2);
+    background: var(--c);
+    transform: rotate(calc(var(--p)*3.6deg)) translateY(calc(50% - var(--w)/2));
+  }
+
+  .pie.alarm {
+    --p: 0;
+    --c: #d33;
+  }
+
+  .pie.warning {
+    --p: 0;
+    --c: #fc0;
+  }
+
+  .pie.info {
+    --p: 0;
+    --c: #08f;
+  }
+
+/*}*/
+
+.journal .list {
+  width: 100%;
+  margin: 8px auto;
+}
+
+.journal .list table {
+  table-layout: fixed;
+}
+
+.journal .list th,
+.journal .list td {
+  font-size: 13px;
+  font-family: 'Yu Gothic UI';
+}
+
+.journal .list th {
+  padding-top: 5px;
+  padding-bottom: 6px;
+  font-weight: 400;
+}
+
+.journal .list td {
+  padding-top: 2px;
+  padding-bottom: 3px;
+  font-weight: 300;
+}
+
+.journal .list table,
+.journal .list th,
+.journal .list td {
+  border: 1px solid grey;
+}
+
+.journal .list table th:nth-of-type(1) {
+  width: 13%;
+}
+
+.journal .list table td:nth-of-type(1) {
+  text-align: center;
+}
+
+.journal .list table th:nth-of-type(2) {
+  width: 9%;
+}
+
+.journal .list table td:nth-of-type(2) {
+  text-align: center;
+}
+
+.journal .list table th:nth-of-type(3) {
+  width: 59%;
+}
+
+.journal .list table td:nth-of-type(3) {
+  padding-left: 6px;
+}
+
+.journal .list table th:nth-of-type(4) {
+  width: 9%;
+}
+
+.journal .list table td:nth-of-type(4) {
+  text-align: center;
+}
+
+.journal .list tr.fault {
+  background-color: #883333;
+}
+
+.journal .list tr.warning {
+  background-color: #888833;
+}
+
+.journal .list tr.info {
+  background-color: #338388;
+}
+
+.footer {
+  margin: 5px auto;
+  padding-bottom: 10px;
+  width: 1024px;
+}
+
+.footer table {
+  width: 99%;
+}
+
+.footer table td {
+  width: 50%;
+}
+
+.footer table td:nth-of-type(1) {
+  text-align: left;
+}
+
+.footer table td:nth-of-type(2) {
+  text-align: right;
+}
+
+.footer a {
+  color: #08f;
+}
