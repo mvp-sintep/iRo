@@ -52,6 +52,17 @@ type UAConfig struct {
 	Namespace int  `yaml:"namespace"`
 }
 
+// DBConfig - настройки сервера postgres
+type DBConfig struct {
+	Address  string `yaml:"address"`
+	Proto    string `yaml:"proto"`
+	Port     string `yaml:"port"`
+	Timeout  int    `yaml:"timeout"`
+	Base     string `yaml:"base"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+}
+
 // HTTPConfig - настройки сервера http
 type HTTPConfig struct {
 	Address  string `yaml:"address"`
@@ -67,6 +78,7 @@ type SystemConfiguration struct {
 	COM    []COMPortConfig `yaml:"com"`
 	Modbus ModbusConfig    `yaml:"modbus"`
 	UA     UAConfig        `yaml:"ua"`
+	DB     DBConfig        `yaml:"postgres"`
 	HTTP   HTTPConfig      `yaml:"http"`
 }
 
@@ -125,6 +137,15 @@ func New() *SystemConfiguration {
 		UA: UAConfig{
 			Port:      54000,
 			Namespace: 1,
+		},
+		DB: DBConfig{
+			Address:  address,
+			Proto:    "tcp",
+			Port:     "5432",
+			Timeout:  10000,
+			Base:     os.Getenv("IROBO_POSTGRES_DATABASE"),
+			User:     os.Getenv("IROBO_POSTGRES_USER"),
+			Password: os.Getenv("IROBO_POSTGRES_PASSWORD"),
 		},
 		HTTP: HTTPConfig{
 			Address:  address,

@@ -20,7 +20,7 @@ var object = websocket.Upgrader{
 // hWEBSocket - обработка запросов на подключение
 func (o *Server) hWEBSocket(w http.ResponseWriter, r *http.Request) {
 	// сообщаем о начале работы
-	log.Print("open websocket connection")
+	// log.Print("open websocket connection")
 	// запускаем экземпляр
 	socket, err := object.Upgrade(w, r, nil)
 	// в случае ошибки
@@ -43,7 +43,7 @@ func (o *Server) hWEBSocket(w http.ResponseWriter, r *http.Request) {
 			// закрываем контекст
 			cancel()
 			// выводим сообщение
-			log.Printf("close websocket connection")
+			// log.Printf("close websocket connection")
 			// уходим
 			return nil
 		})

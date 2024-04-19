@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"iRo/internal/config"
+	"iRo/internal/driver/db"
 	"net/http"
 	"time"
 )
@@ -16,11 +17,12 @@ type Server struct {
 	cfg     *config.HTTPConfig // запись конфигурации
 	eCh     chan<- error       // канал ошибок
 	core    *[]byte            // данные ядра
+	dbPool  *db.Pool           // пул соединений с СУБД
 	server  *http.Server       // сам сервер
 }
 
 // New - создание блока данных сервера
-func New(ctx context.Context, eCh chan<- error, core *[]byte, cfg *config.HTTPConfig) (*Server, error) {
+func New(ctx context.Context, eCh chan<- error, core *[]byte, pool *db.Pool, cfg *config.HTTPConfig) (*Server, error) {
 
 	// проверяем аргументы
 	if cfg == nil {
@@ -31,9 +33,10 @@ func New(ctx context.Context, eCh chan<- error, core *[]byte, cfg *config.HTTPCo
 	}
 	// создаем блок данных
 	server := &Server{
-		cfg:  cfg,
-		eCh:  eCh,
-		core: core,
+		cfg:    cfg,
+		eCh:    eCh,
+		core:   core,
+		dbPool: pool,
 	}
 	// если не задан контекст
 	if ctx == nil {

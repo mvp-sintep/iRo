@@ -4,7 +4,7 @@
 
 Реализация тестового стенда
 
-MODBUS RTU + ядро данных + WEB SOCKET + HTML + MODBUS TCP  + OPC UA
+MODBUS RTU + ядро данных + WEB SOCKET + HTML + MODBUS TCP  + OPC UA + postgresql
 
 ### Структура проекта
 
@@ -27,6 +27,9 @@ MODBUS RTU + ядро данных + WEB SOCKET + HTML + MODBUS TCP  + OPC UA
 |    |     ├── com
 │    |     |     ├── api.go
 │    |     |     └── port.go
+|    |     ├── db
+│    |     |     ├── api.go
+│    |     |     └── pool.go
 |    |     └── tcp
 │    |           ├── api.go
 │    |           ├── connection.go
@@ -56,7 +59,8 @@ MODBUS RTU + ядро данных + WEB SOCKET + HTML + MODBUS TCP  + OPC UA
 │          └── web
 │                ├── serve.go
 │                ├── server.go
-│                └── socket.go
+│                ├── socket.go
+│                └── sql.go
 ├── vendor
 └── web
      ├── files

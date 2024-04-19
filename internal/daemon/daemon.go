@@ -5,6 +5,7 @@ import (
 	"iRo/internal/config"
 	"iRo/internal/core"
 	"iRo/internal/driver/com"
+	"iRo/internal/driver/db"
 	"iRo/internal/driver/tcp"
 	"iRo/internal/server/mbrtu"
 	"iRo/internal/server/mbtcp"
@@ -14,6 +15,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 // Daemon - фоновый процесс верхнего уровня
@@ -29,6 +31,7 @@ type Daemon struct {
 	webECh   chan error
 	webSrv   *web.Server
 	uaSrv    *ua.Server
+	dbPool   *db.Pool
 }
 
 // New - создание процесса
@@ -64,8 +67,12 @@ func New(ctx context.Context, sysCfg *config.SystemConfiguration) (*Daemon, erro
 	if daemon.mbtcpSrv, err = mbtcp.New(daemon.context, &daemon.core, daemon.tcpDrv, &sysCfg.Modbus.TCP); err != nil {
 		return nil, err
 	}
+	// создаем пул соединений с СУБД
+	if daemon.dbPool, err = db.New(daemon.context, &sysCfg.DB); err != nil {
+		return nil, err
+	}
 	// создаем HTTP сервер
-	if daemon.webSrv, err = web.New(daemon.context, daemon.webECh, &daemon.core, &sysCfg.HTTP); err != nil {
+	if daemon.webSrv, err = web.New(daemon.context, daemon.webECh, &daemon.core, daemon.dbPool, &sysCfg.HTTP); err != nil {
 		return nil, err
 	}
 	// создаем UA сервер
@@ -94,6 +101,20 @@ func (o *Daemon) Run() error {
 	go func() { o.comDrv.Run() }()
 	// запускаем драйвер TCP порта
 	go func() { o.tcpDrv.Run() }()
+
+	go func() {
+		for {
+			select {
+			case <-o.context.Done():
+				return
+			case <-time.After(time.Duration(1) * time.Second):
+				rows, _ := o.dbPool.Query("select 1 as result;")
+				if rows != nil {
+					rows.Close()
+				}
+			}
+		}
+	}()
 
 	// создаем канал для системных сигналов
 	sch := make(chan os.Signal, 1)
@@ -157,6 +178,11 @@ func (o *Daemon) Shutdown() {
 	if err := o.comDrv.Shutdown(); err != nil {
 		// показываем сообщение
 		log.Print("ошибка драйвера COM порта <", err, ">")
+	}
+	// завершение работы пула СУБД
+	if err := o.dbPool.Shutdown(); err != nil {
+		// показываем сообщение
+		log.Print("ошибка пула СУБД <", err, ">")
 	}
 	// после выхода дадим команду на закрытие контекста
 	defer o.cancel()

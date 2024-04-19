@@ -45,6 +45,16 @@ func (o *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if strings.HasPrefix(r.URL.String(), "/sql.json") {
+			http.Header.Add(w.Header(), "Access-Control-Allow-Origin", "*")
+			http.Header.Add(w.Header(), "Content-Type", "application/json;charset=utf-8")
+			http.Header.Add(w.Header(), "X-Content-Type-Options", "nosniff")
+			http.Header.Add(w.Header(), "Cache-Control", "no-cache")
+			w.WriteHeader(http.StatusOK)
+			o.hSQL(w, r)
+			return
+		}
+		
 	}
 
 	w.WriteHeader(http.StatusNotFound)
