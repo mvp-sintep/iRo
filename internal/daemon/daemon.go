@@ -4,6 +4,7 @@ import (
 	"context"
 	"iRo/internal/config"
 	"iRo/internal/core"
+	"iRo/internal/daemon/ae"
 	"iRo/internal/driver/com"
 	"iRo/internal/driver/db"
 	"iRo/internal/driver/tcp"
@@ -23,6 +24,7 @@ type Daemon struct {
 	context  context.Context
 	cancel   context.CancelFunc
 	core     []byte
+	nda      int
 	comDrv   *com.Driver
 	tcpDrv   *tcp.Driver
 	tcpECh   chan error
@@ -32,10 +34,11 @@ type Daemon struct {
 	webSrv   *web.Server
 	uaSrv    *ua.Server
 	dbPool   *db.Pool
+	aeProc   *ae.Service
 }
 
 // New - создание процесса
-func New(ctx context.Context, sysCfg *config.SystemConfiguration) (*Daemon, error) {
+func New(ctx context.Context, sysCfg *config.SystemConfig, aeCfg *config.AEConfig) (*Daemon, error) {
 	var err error
 	// создаем процесс
 	daemon := &Daemon{
@@ -50,6 +53,8 @@ func New(ctx context.Context, sysCfg *config.SystemConfiguration) (*Daemon, erro
 	daemon.context, daemon.cancel = context.WithCancel(ctx)
 	// ядро данных
 	daemon.core = core.Data[:]
+	// контроль изменения данных ядра
+	daemon.nda = 0
 
 	// создаем драйвер COM порта
 	if daemon.comDrv, err = com.New(daemon.context, &sysCfg.COM[0]); err != nil {
@@ -60,11 +65,11 @@ func New(ctx context.Context, sysCfg *config.SystemConfiguration) (*Daemon, erro
 		return nil, err
 	}
 	// создаем сервер MODBUS RTU
-	if daemon.mbrtuSrv, err = mbrtu.New(daemon.context, &daemon.core, daemon.comDrv, &sysCfg.Modbus.RTU[0]); err != nil {
+	if daemon.mbrtuSrv, err = mbrtu.New(daemon.context, &daemon.core, &daemon.nda, daemon.comDrv, &sysCfg.Modbus.RTU[0]); err != nil {
 		return nil, err
 	}
 	// создаем сервер MODBUS TCP
-	if daemon.mbtcpSrv, err = mbtcp.New(daemon.context, &daemon.core, daemon.tcpDrv, &sysCfg.Modbus.TCP); err != nil {
+	if daemon.mbtcpSrv, err = mbtcp.New(daemon.context, &daemon.core, &daemon.nda, daemon.tcpDrv, &sysCfg.Modbus.TCP); err != nil {
 		return nil, err
 	}
 	// создаем пул соединений с СУБД
@@ -77,6 +82,10 @@ func New(ctx context.Context, sysCfg *config.SystemConfiguration) (*Daemon, erro
 	}
 	// создаем UA сервер
 	if daemon.uaSrv, err = ua.New(daemon.context, &sysCfg.UA); err != nil {
+		return nil, err
+	}
+	// создаем модуль обработки тревог и событий
+	if daemon.aeProc, err = ae.New(daemon.context, daemon.dbPool, &daemon.nda, aeCfg); err != nil {
 		return nil, err
 	}
 	// вернем указатель на процесс
@@ -101,6 +110,8 @@ func (o *Daemon) Run() error {
 	go func() { o.comDrv.Run() }()
 	// запускаем драйвер TCP порта
 	go func() { o.tcpDrv.Run() }()
+	// запускаем модуль тревог и событий
+	go func() { o.aeProc.Run() }()
 
 	go func() {
 		for {

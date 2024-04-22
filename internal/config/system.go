@@ -73,8 +73,8 @@ type HTTPConfig struct {
 	Root     string `yaml:"root"`
 }
 
-// SystemConfiguration - все данные настройки
-type SystemConfiguration struct {
+// SystemConfig - все данные настройки
+type SystemConfig struct {
 	COM    []COMPortConfig `yaml:"com"`
 	Modbus ModbusConfig    `yaml:"modbus"`
 	UA     UAConfig        `yaml:"ua"`
@@ -82,8 +82,8 @@ type SystemConfiguration struct {
 	HTTP   HTTPConfig      `yaml:"http"`
 }
 
-// New - создание записи конфигурации
-func New() *SystemConfiguration {
+// NewSystemConfig - создание записи конфигурации
+func NewSystemConfig() *SystemConfig {
 
 	address := func() string { // получим первый IP адрес первой сетевой платы
 		if list, err := net.InterfaceAddrs(); err == nil {
@@ -100,7 +100,7 @@ func New() *SystemConfiguration {
 
 	// создадим запись конфигурации со значениями по умолчанию
 	// для настроек доступа к postgres предусмотрено использование переменных окружения
-	return &SystemConfiguration{
+	return &SystemConfig{
 		COM: []COMPortConfig{
 			{
 				File:     "/dev/ttyS0",
@@ -159,7 +159,7 @@ func New() *SystemConfiguration {
 }
 
 // Load - загрузка данных конфигурации
-func (o *SystemConfiguration) Load(path *string) error {
+func (o *SystemConfig) Load(path *string) error {
 	file, err := os.ReadFile(*path)
 	if err == nil {
 		err = yaml.Unmarshal(file, o)
