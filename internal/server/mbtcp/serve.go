@@ -66,7 +66,7 @@ func (o *Server) serve() {
 						// заполнитель значений за пределами ядра данных
 						tmp := uint16(0)
 						if i < length {
-							tmp = get.Uint16((*o.core)[i:])
+							tmp = get.Uint16Swapped((*o.core)[i:])
 						}
 						// пишем в буфер
 						set.Uint16(buffer[tx:], tmp)
@@ -125,13 +125,13 @@ func (o *Server) serve() {
 							break
 						}
 						// пишем в ядро
-						set.Uint16((*o.core)[i:], get.Uint16(request[tx:]))
+						set.Uint16((*o.core)[i:], get.Uint16Swapped(request[tx:]))
 						// one register 2 bytes
 						tx += 2
 						i += 2
 					}
 
-					set.Uint16(buffer[0:], get.Uint16(request[0:]))
+					set.Uint16(buffer[0:], get.Uint16(request[0:])) 
 					set.Uint16(buffer[2:], 0)
 					set.Uint16(buffer[4:], 6)
 					set.Uint8(buffer[6:], get.Uint8(request[6:]))
