@@ -13,11 +13,12 @@ type Server struct {
 	cancel  context.CancelFunc      // функция закрытия контекста сервера
 	cfg     *config.ModbusTCPConfig // запись конфигурации
 	core    *[]byte                 // данные ядра
+	nda     chan<- struct{}         // сигнал, данные ядра обновлены
 	tcpDrv  *tcp.Driver             // драйвер
 }
 
 // New - создание блока данных сервера
-func New(ctx context.Context, core *[]byte, tcpDrv *tcp.Driver, cfg *config.ModbusTCPConfig) (*Server, error) {
+func New(ctx context.Context, core *[]byte, nda chan<- struct{}, tcpDrv *tcp.Driver, cfg *config.ModbusTCPConfig) (*Server, error) {
 	// проверяем аргументы
 	if cfg == nil {
 		return nil, errors.New("нет данных конфигурации MODBUS TCP сервера")
@@ -26,6 +27,7 @@ func New(ctx context.Context, core *[]byte, tcpDrv *tcp.Driver, cfg *config.Modb
 	server := &Server{
 		cfg:    cfg,
 		core:   core,
+		nda:    nda,
 		tcpDrv: tcpDrv,
 	}
 	// если не задан контекст

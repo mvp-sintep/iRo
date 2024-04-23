@@ -29,10 +29,6 @@ func New(ctx context.Context, cfg *config.COMPortConfig) (*Driver, error) {
 	if cfg == nil {
 		return nil, errors.New("нет данных конфигурации RTU драйвера")
 	}
-	// проверим настройку паузы
-	if cfg.Pause < 100 || cfg.Pause > 55000 {
-		cfg.Pause = 5000
-	}
 	// создаем блок данных
 	driver := &Driver{
 		cfg:      cfg,
@@ -76,62 +72,17 @@ func (o *Driver) Run() error {
 		}
 	}()
 	// переменные
-	timeout := time.Duration(o.cfg.Pause) * time.Microsecond
-	buffer := make([]byte, 512)
+	buf := [512]byte{}
 	count := int(0)
 	// бесконечный цикл
 	for {
 		// селектор сигналов
 		select {
+
 		// контекст закрывается
 		case <-o.context.Done():
 			return nil
-		// сработал таймаут ожидания минимальной порции данных
-		case <-time.After(timeout):
-			// если идет отправка данных, а не прием
-			if o.txCount > 0 {
-				// ждем начала приема
-				continue
-			}
-			// считываем данные в локальный буфер
-			x, err := port.Read(buffer)
-			// если ошибка
-			if err != nil {
-				// если ошибка отсутствия данных
-				if err.Error() == "serial: timeout" {
-					// если ничего не получили в последний раз, но есть данные в буфере
-					if count > 0 {
-						// указываем кол-во данных
-						o.rxCount = count
-						o.txCount = 0
-						// готовим новый прием
-						count = 0
-						// выводим сообщение
-						// log.Printf("dsr<-[%d]<-[%x]", o.rxCount, o.rxBuffer[:o.rxCount])
-						// сигнал о наличии принятых данных
-						o.SigDSR <- struct{}{}
-					}
-				} else {
-					// другая ошибка, выводим сообщение
-					log.Printf("com<-[error]<-[%v]", err)
-				}
-				// продолжаем
-				continue
-			}
-			// есть данные
-			if x > 0 {
-				// данных не слишком много
-				if (x + count) <= len(o.rxBuffer) {
-					// копируем
-					for i := 0; i < x && count < len(o.rxBuffer); i++ {
-						o.rxBuffer[count] = buffer[i]
-						count += 1
-					}
-				} else {
-					// данных слишком много отбрасываем
-					count = 0
-				}
-			}
+
 		// данные готовы к отправке
 		case <-o.SigRTS:
 			// log.Printf("rts->[%d]->[%x]", o.txCount, o.txBuffer[:o.txCount])
@@ -147,6 +98,49 @@ func (o *Driver) Run() error {
 			}
 			// отправили
 			o.txCount = 0
+
+		// идет прием запросов
+		default:
+			// если нет отправки данных
+			if o.txCount == 0 {
+				// считываем данные в локальный буфер
+				x, err := port.Read(buf[:])
+				// если ошибка
+				if err != nil {
+					// если ошибка отсутствия данных
+					if err.Error() == "serial: timeout" {
+						// если ничего не получили в последний раз, но есть данные в буфере
+						if count > 0 {
+							// указываем кол-во данных
+							o.rxCount = count
+							// готовим новый прием
+							count = 0
+							// выводим сообщение
+							// log.Printf("dsr<-[%d]<-[%x]", o.rxCount, o.rxBuffer[:o.rxCount])
+							// сигнал о наличии принятых данных
+							o.SigDSR <- struct{}{}
+						}
+					} else {
+						// другая ошибка, выводим сообщение
+						log.Printf("com<-[error]<-[%v]", err)
+					}
+				} else {
+					// есть данные
+					if x > 0 {
+						// данных не слишком много
+						if (x + count) <= len(o.rxBuffer) {
+							// копируем
+							for i := 0; i < x && count < len(o.rxBuffer); i++ {
+								o.rxBuffer[count] = buf[i]
+								count += 1
+							}
+						} else {
+							// данных слишком много отбрасываем
+							count = 0
+						}
+					}
+				}
+			}
 		}
 	}
 }

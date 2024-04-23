@@ -149,6 +149,9 @@ func (o *Server) serve() {
 					o.comDrv.SetTXData(buffer[:8])
 					o.comDrv.SigRTS <- struct{}{}
 
+					// данные обновлены
+					o.nda <- struct{}{}
+
 				// прочее
 				default:
 					set.Uint8(buffer[0:], get.Uint8(request[0:]))

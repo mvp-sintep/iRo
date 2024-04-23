@@ -21,7 +21,6 @@ type COMPortConfig struct {
 	Parity   string `yaml:"parity"`
 	StopBits int    `yaml:"stopbits"`
 	Timeout  int    `yaml:"timeout"`
-	Pause    int    `yaml:"pause"`
 }
 
 // ModbusRTUConfig - данные конфигурации MODBUS RTU устройства
@@ -82,8 +81,8 @@ type SystemConfiguration struct {
 	HTTP   HTTPConfig      `yaml:"http"`
 }
 
-// New - создание записи конфигурации
-func New() *SystemConfiguration {
+// NewSystemConfig - создание записи конфигурации
+func NewSystemConfig() *SystemConfiguration {
 
 	address := func() string { // получим первый IP адрес первой сетевой платы
 		if list, err := net.InterfaceAddrs(); err == nil {
@@ -109,7 +108,6 @@ func New() *SystemConfiguration {
 				Parity:   "N",
 				StopBits: 1,
 				Timeout:  1,
-				Pause:    5,
 			},
 		},
 		Modbus: ModbusConfig{
@@ -143,9 +141,9 @@ func New() *SystemConfiguration {
 			Proto:    "tcp",
 			Port:     "5432",
 			Timeout:  10000,
-			Base:     os.Getenv("IROBO_POSTGRES_DATABASE"),
-			User:     os.Getenv("IROBO_POSTGRES_USER"),
-			Password: os.Getenv("IROBO_POSTGRES_PASSWORD"),
+			Base:     os.Getenv("IRO_POSTGRES_DATABASE"),
+			User:     os.Getenv("IRO_POSTGRES_USER"),
+			Password: os.Getenv("IRO_POSTGRES_PASSWORD"),
 		},
 		HTTP: HTTPConfig{
 			Address:  address,

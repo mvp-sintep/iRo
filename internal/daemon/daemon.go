@@ -4,6 +4,7 @@ import (
 	"context"
 	"iRo/internal/config"
 	"iRo/internal/core"
+	"iRo/internal/daemon/ae"
 	"iRo/internal/driver/com"
 	"iRo/internal/driver/db"
 	"iRo/internal/driver/tcp"
@@ -15,7 +16,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 // Daemon - фоновый процесс верхнего уровня
@@ -23,6 +23,7 @@ type Daemon struct {
 	context  context.Context
 	cancel   context.CancelFunc
 	core     []byte
+	nda      chan struct{}
 	comDrv   *com.Driver
 	tcpDrv   *tcp.Driver
 	tcpECh   chan error
@@ -32,13 +33,15 @@ type Daemon struct {
 	webSrv   *web.Server
 	uaSrv    *ua.Server
 	dbPool   *db.Pool
+	ae       *ae.Service
 }
 
 // New - создание процесса
-func New(ctx context.Context, sysCfg *config.SystemConfiguration) (*Daemon, error) {
+func New(ctx context.Context, sysCfg *config.SystemConfiguration, aeCfg *config.AEConfig) (*Daemon, error) {
 	var err error
 	// создаем процесс
 	daemon := &Daemon{
+		nda:    make(chan struct{}),
 		tcpECh: make(chan error),
 		webECh: make(chan error),
 	}
@@ -60,11 +63,11 @@ func New(ctx context.Context, sysCfg *config.SystemConfiguration) (*Daemon, erro
 		return nil, err
 	}
 	// создаем сервер MODBUS RTU
-	if daemon.mbrtuSrv, err = mbrtu.New(daemon.context, &daemon.core, daemon.comDrv, &sysCfg.Modbus.RTU[0]); err != nil {
+	if daemon.mbrtuSrv, err = mbrtu.New(daemon.context, &daemon.core, daemon.nda, daemon.comDrv, &sysCfg.Modbus.RTU[0]); err != nil {
 		return nil, err
 	}
 	// создаем сервер MODBUS TCP
-	if daemon.mbtcpSrv, err = mbtcp.New(daemon.context, &daemon.core, daemon.tcpDrv, &sysCfg.Modbus.TCP); err != nil {
+	if daemon.mbtcpSrv, err = mbtcp.New(daemon.context, &daemon.core, daemon.nda, daemon.tcpDrv, &sysCfg.Modbus.TCP); err != nil {
 		return nil, err
 	}
 	// создаем пул соединений с СУБД
@@ -79,6 +82,11 @@ func New(ctx context.Context, sysCfg *config.SystemConfiguration) (*Daemon, erro
 	if daemon.uaSrv, err = ua.New(daemon.context, &sysCfg.UA); err != nil {
 		return nil, err
 	}
+	// создаем сервис тревог и событий
+	if daemon.ae, err = ae.New(daemon.context, &daemon.core, daemon.nda, daemon.dbPool, aeCfg); err != nil {
+		return nil, err
+	}
+
 	// вернем указатель на процесс
 	return daemon, nil
 }
@@ -101,20 +109,8 @@ func (o *Daemon) Run() error {
 	go func() { o.comDrv.Run() }()
 	// запускаем драйвер TCP порта
 	go func() { o.tcpDrv.Run() }()
-
-	go func() {
-		for {
-			select {
-			case <-o.context.Done():
-				return
-			case <-time.After(time.Duration(1) * time.Second):
-				rows, _ := o.dbPool.Query("select 1 as result;")
-				if rows != nil {
-					rows.Close()
-				}
-			}
-		}
-	}()
+	// запускаем сервис тревог и событий
+	go func() { o.ae.Run() }()
 
 	// создаем канал для системных сигналов
 	sch := make(chan os.Signal, 1)

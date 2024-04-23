@@ -131,7 +131,7 @@ func (o *Server) serve() {
 						i += 2
 					}
 
-					set.Uint16(buffer[0:], get.Uint16(request[0:])) 
+					set.Uint16(buffer[0:], get.Uint16(request[0:]))
 					set.Uint16(buffer[2:], 0)
 					set.Uint16(buffer[4:], 6)
 					set.Uint8(buffer[6:], get.Uint8(request[6:]))
@@ -140,6 +140,9 @@ func (o *Server) serve() {
 					set.Uint16(buffer[10:], uint16((tx-13)/2))
 					conn.SetTXData(buffer[:12])
 					o.tcpDrv.SigRTS <- conn
+
+					// данные обновлены
+					o.nda <- struct{}{}
 
 				default:
 					set.Uint16(buffer[0:], get.Uint16(request[0:]))
