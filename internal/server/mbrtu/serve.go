@@ -148,6 +148,8 @@ func (o *Server) serve() {
 					set.Uint16Swapped(buffer[6:], crc.Reset().Push(buffer[:6]).Result())
 					o.comDrv.SetTXData(buffer[:8])
 					o.comDrv.SigRTS <- struct{}{}
+					// данные ядра изменились
+					*o.nda += 1
 
 					// данные обновлены
 					o.nda <- struct{}{}
