@@ -53,8 +53,6 @@ func New(ctx context.Context, sysCfg *config.SystemConfiguration, aeCfg *config.
 	daemon.context, daemon.cancel = context.WithCancel(ctx)
 	// ядро данных
 	daemon.core = core.Data[:]
-	// контроль изменения данных ядра
-	daemon.nda = 0
 
 	// создаем драйвер COM порта
 	if daemon.comDrv, err = com.New(daemon.context, &sysCfg.COM[0]); err != nil {

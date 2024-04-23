@@ -72,8 +72,8 @@ type HTTPConfig struct {
 	Root     string `yaml:"root"`
 }
 
-// SystemConfig - все данные настройки
-type SystemConfig struct {
+// SystemConfiguration - все данные настройки
+type SystemConfiguration struct {
 	COM    []COMPortConfig `yaml:"com"`
 	Modbus ModbusConfig    `yaml:"modbus"`
 	UA     UAConfig        `yaml:"ua"`
@@ -99,7 +99,7 @@ func NewSystemConfig() *SystemConfiguration {
 
 	// создадим запись конфигурации со значениями по умолчанию
 	// для настроек доступа к postgres предусмотрено использование переменных окружения
-	return &SystemConfig{
+	return &SystemConfiguration{
 		COM: []COMPortConfig{
 			{
 				File:     "/dev/ttyS0",
@@ -157,7 +157,7 @@ func NewSystemConfig() *SystemConfiguration {
 }
 
 // Load - загрузка данных конфигурации
-func (o *SystemConfig) Load(path *string) error {
+func (o *SystemConfiguration) Load(path *string) error {
 	file, err := os.ReadFile(*path)
 	if err == nil {
 		err = yaml.Unmarshal(file, o)

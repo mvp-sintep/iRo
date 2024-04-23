@@ -140,8 +140,6 @@ func (o *Server) serve() {
 					set.Uint16(buffer[10:], uint16((tx-13)/2))
 					conn.SetTXData(buffer[:12])
 					o.tcpDrv.SigRTS <- conn
-					// данные ядра изменились
-					*o.nda += 1
 
 					// данные обновлены
 					o.nda <- struct{}{}
