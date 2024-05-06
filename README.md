@@ -70,3 +70,9 @@ MODBUS RTU + ядро данных + WEB SOCKET + HTML + MODBUS TCP  + OPC UA + 
            ├── error.html
            └── index.html
 ```
+
+### Структура БД
+
+В файле script/create.sql
+
+
