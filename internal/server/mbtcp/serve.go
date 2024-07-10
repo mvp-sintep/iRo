@@ -58,7 +58,8 @@ func (o *Server) serve() {
 						quantity = 125
 					}
 					// смещение в ядре данных
-					i := o.cfg.Core.Start + int(get.Uint16(request[9:])*2)
+					i := o.cfg.Core.Start + int(get.Uint16(request[8:])*2)
+
 					// смещение в выходном буфере
 					tx := 9
 					// заполняем буфер

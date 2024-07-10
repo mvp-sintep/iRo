@@ -36,7 +36,7 @@ func go_callback_int32(address C.int16_t, value *C.int32_t) C.int16_t {
 		*ptr = 0
 		return 1
 	}
-	*ptr = int32(get.Uint32(core.Data[address:]))
+	*ptr = int32(get.Uint32Swapped(core.Data[address:]))
 	return 1
 }
 
@@ -50,7 +50,7 @@ func go_callback_int16(address C.int16_t, value *C.int16_t) C.int16_t {
 		*ptr = 0
 		return 1
 	}
-	*ptr = int16(get.Uint16(core.Data[address:]))
+	*ptr = int16(get.Uint16Swapped(core.Data[address:]))
 	return 1
 }
 
