@@ -33,9 +33,13 @@ int CreateObjectNode( UA_Server *server, char *nodeID, char *nodeName )
     NULL );
 }
 
-extern int16_t go_callback_int32( const int16_t address, int32_t *value );
-extern int16_t go_callback_int16( const int16_t address, int16_t *value );
-extern int16_t go_callback_float( const int16_t address, float *value );
+extern int16_t go_read_callback_int32( const int16_t address, int32_t *value );
+extern int16_t go_read_callback_int16( const int16_t address, int16_t *value );
+extern int16_t go_read_callback_float( const int16_t address, float *value );
+
+extern int16_t go_write_callback_int32( const int16_t address, int32_t *value );
+extern int16_t go_write_callback_int16( const int16_t address, int16_t *value );
+extern int16_t go_write_callback_float( const int16_t address, float *value );
 
 static UA_StatusCode readInt32CallBack(
     UA_Server *server,
@@ -49,7 +53,7 @@ static UA_StatusCode readInt32CallBack(
 {
   int32_t tmp = 0;
   if( nodeId->identifier.string.data != NULL ) {
-    if( go_callback_int32( atoi( nodeId->identifier.string.data + 3 ) * 4, &tmp ) != 0 ) {
+    if( go_read_callback_int32( atoi( nodeId->identifier.string.data + 3 ) * 4, &tmp ) != 0 ) {
       UA_Variant_setScalarCopy( &dataValue->value, &tmp, &UA_TYPES[ UA_TYPES_INT32 ] );
       dataValue->hasValue = true;
       return UA_STATUSCODE_GOOD;
@@ -70,7 +74,7 @@ static UA_StatusCode readInt16CallBack(
 {
   int16_t tmp = 0;
   if( nodeId->identifier.string.data != NULL ) {
-    if( go_callback_int16( atoi( nodeId->identifier.string.data + 3 ) * 2, &tmp ) != 0 ) {
+    if( go_read_callback_int16( atoi( nodeId->identifier.string.data + 3 ) * 2, &tmp ) != 0 ) {
       UA_Variant_setScalarCopy( &dataValue->value, &tmp, &UA_TYPES[ UA_TYPES_INT16 ] );
       dataValue->hasValue = true;
       return UA_STATUSCODE_GOOD;
@@ -91,9 +95,66 @@ static UA_StatusCode readFloatCallBack(
 {
   float tmp = 0;
   if( nodeId->identifier.string.data != NULL ) {
-    if( go_callback_float( atoi( nodeId->identifier.string.data + 1 ) * 4, &tmp ) != 0 ) {
+    if( go_read_callback_float( atoi( nodeId->identifier.string.data + 1 ) * 4, &tmp ) != 0 ) {
       UA_Variant_setScalarCopy( &dataValue->value, &tmp, &UA_TYPES[ UA_TYPES_FLOAT ] );
       dataValue->hasValue = true;
+      return UA_STATUSCODE_GOOD;
+    }
+  }
+  return UA_STATUSCODE_BAD;
+}
+
+static UA_StatusCode writeInt32CallBack(
+  UA_Server *server,
+  const UA_NodeId *sessionId,
+  void *sessionContext,
+  const UA_NodeId *nodeId,
+  void *nodeContext,
+  const UA_NumericRange *range,
+  const UA_DataValue *value )
+{
+  int32_t tmp = 0;
+  if( nodeId->identifier.string.data != NULL && value->hasValue ) {
+    tmp = *((int32_t*)(value->value.data));
+    if( go_write_callback_int32( atoi( nodeId->identifier.string.data + 3 ) * 4, &tmp ) != 0 ) {
+      return UA_STATUSCODE_GOOD;
+    }
+  }
+  return UA_STATUSCODE_BAD;
+}
+
+static UA_StatusCode writeInt16CallBack(
+  UA_Server *server,
+  const UA_NodeId *sessionId,
+  void *sessionContext,
+  const UA_NodeId *nodeId,
+  void *nodeContext,
+  const UA_NumericRange *range,
+  const UA_DataValue *value )
+{
+  int16_t tmp = 0;
+  if( nodeId->identifier.string.data != NULL && value->hasValue ) {
+    tmp = *((int16_t*)(value->value.data));
+    if( go_write_callback_int16( atoi( nodeId->identifier.string.data + 3 ) * 2, &tmp ) != 0 ) {
+      return UA_STATUSCODE_GOOD;
+    }
+  }
+  return UA_STATUSCODE_BAD;
+}
+
+static UA_StatusCode writeFloatCallBack(
+  UA_Server *server,
+  const UA_NodeId *sessionId,
+  void *sessionContext,
+  const UA_NodeId *nodeId,
+  void *nodeContext,
+  const UA_NumericRange *range,
+  const UA_DataValue *value )
+{
+  float tmp = 0;
+  if( nodeId->identifier.string.data != NULL && value->hasValue ) {
+    tmp = *((float*)(value->value.data));
+    if( go_write_callback_float( atoi( nodeId->identifier.string.data + 1 ) * 4, &tmp ) != 0 ) {
       return UA_STATUSCODE_GOOD;
     }
   }
@@ -107,7 +168,8 @@ int createDataSourceTag(
     char *parentNodeID,
     UA_Variant defaultValue,
     uint32_t ua_type,
-    callback_t callback)
+    read_callback_t read_callback,
+    write_callback_t write_callback)
 {
   UA_NodeId ua_parentNodeId = UA_NODEID_STRING( 1, parentNodeID );
   UA_NodeId ua_parentReferenceNodeId = UA_NODEID_NUMERIC( 0, UA_NS0ID_ORGANIZES );
@@ -123,7 +185,8 @@ int createDataSourceTag(
   ua_attributes.value = defaultValue;
 
   UA_DataSource ua_dataSource;
-  ua_dataSource.read = callback;
+  ua_dataSource.read = read_callback;
+  ua_dataSource.write = write_callback;
 
   return UA_Server_addDataSourceVariableNode(
     server,
@@ -157,7 +220,8 @@ int CreateI32DataSource(
     parentNodeID,
     ua_defaultValue,
     ua_type,
-    readInt32CallBack );
+    readInt32CallBack,
+    writeInt32CallBack );
 }
 
 int CreateI16DataSource(
@@ -179,7 +243,8 @@ int CreateI16DataSource(
     parentNodeID,
     ua_defaultValue,
     ua_type,
-    readInt16CallBack );
+    readInt16CallBack,
+    writeInt16CallBack );
 }
 
 int CreateFloatDataSource(
@@ -201,7 +266,8 @@ int CreateFloatDataSource(
     parentNodeID,
     ua_defaultValue,
     ua_type,
-    readFloatCallBack );
+    readFloatCallBack,
+    writeFloatCallBack );
 }
 
 void Run( UA_Server *server )

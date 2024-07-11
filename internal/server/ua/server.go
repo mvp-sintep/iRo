@@ -11,6 +11,7 @@ import (
 	"iRo/internal/config"
 	"iRo/internal/core"
 	"iRo/internal/pkg/get"
+	"iRo/internal/pkg/set"
 	"log"
 	"unsafe"
 )
@@ -26,8 +27,8 @@ func go_callback_info(x []byte) {
 	}
 }
 
-//export go_callback_int32
-func go_callback_int32(address C.int16_t, value *C.int32_t) C.int16_t {
+//export go_read_callback_int32
+func go_read_callback_int32(address C.int16_t, value *C.int32_t) C.int16_t {
 	if value == nil {
 		return 1
 	}
@@ -40,8 +41,8 @@ func go_callback_int32(address C.int16_t, value *C.int32_t) C.int16_t {
 	return 1
 }
 
-//export go_callback_int16
-func go_callback_int16(address C.int16_t, value *C.int16_t) C.int16_t {
+//export go_read_callback_int16
+func go_read_callback_int16(address C.int16_t, value *C.int16_t) C.int16_t {
 	if value == nil {
 		return 1
 	}
@@ -54,8 +55,8 @@ func go_callback_int16(address C.int16_t, value *C.int16_t) C.int16_t {
 	return 1
 }
 
-//export go_callback_float
-func go_callback_float(address C.int16_t, value *C.int32_t) C.int16_t {
+//export go_read_callback_float
+func go_read_callback_float(address C.int16_t, value *C.int32_t) C.int16_t {
 	if value == nil {
 		return 1
 	}
@@ -65,6 +66,42 @@ func go_callback_float(address C.int16_t, value *C.int32_t) C.int16_t {
 		return 1
 	}
 	*ptr = get.Float32(core.Data[address:])
+	return 1
+}
+
+//export go_write_callback_int32
+func go_write_callback_int32(address C.int16_t, value *C.int32_t) C.int16_t {
+	if value == nil {
+		return 1
+	}
+	if address < 0 || int(address) >= len(core.Data) {
+		return 1
+	}
+	set.Uint32Swapped(core.Data[address:], *((*uint32)(unsafe.Pointer(value))))
+	return 1
+}
+
+//export go_write_callback_int16
+func go_write_callback_int16(address C.int16_t, value *C.int16_t) C.int16_t {
+	if value == nil {
+		return 1
+	}
+	if address < 0 || int(address) >= len(core.Data) {
+		return 1
+	}
+	set.Uint16Swapped(core.Data[address:], *((*uint16)(unsafe.Pointer(value))))
+	return 1
+}
+
+//export go_write_callback_float
+func go_write_callback_float(address C.int16_t, value *C.int32_t) C.int16_t {
+	if value == nil {
+		return 1
+	}
+	if address < 0 || int(address) >= len(core.Data) {
+		return 1
+	}
+	set.Float32(core.Data[address:], *((*float32)(unsafe.Pointer(value))))
 	return 1
 }
 

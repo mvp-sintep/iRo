@@ -3,7 +3,7 @@
 
 #include "open62541.h"
 
-typedef UA_StatusCode ( *callback_t )(
+typedef UA_StatusCode ( *read_callback_t )(
   UA_Server *server,
   const UA_NodeId *sessionId,
   void *sessionContext,
@@ -12,6 +12,15 @@ typedef UA_StatusCode ( *callback_t )(
   UA_Boolean includeSourceTimeStamp,
   const UA_NumericRange *range,
   UA_DataValue *value );
+
+typedef UA_StatusCode ( *write_callback_t )(
+  UA_Server *server,
+  const UA_NodeId *sessionId,
+  void *sessionContext,
+  const UA_NodeId *nodeId,
+  void *nodeContext,
+  const UA_NumericRange *range,
+  const UA_DataValue *value);
 
 UA_Server *New( uint32_t port, uint32_t parentNodes_length, int namespaceId );
 int CreateObjectNode( UA_Server *server, char *nodeID, char *nodeName );
